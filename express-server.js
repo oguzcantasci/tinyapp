@@ -9,7 +9,10 @@ app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
 
-// Function to generate unique shortURL id
+
+////////// HELPER FUNCTIONS //////////
+
+// Helper function to generate unique shortURL id
 const generateRandomString = function(length) {
   let result = '';
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -20,23 +23,34 @@ const generateRandomString = function(length) {
   return result;
 };
 
-// Helper func to find user by email
+// Helper function to find user by email
 const getUserByEmail = function(email) {
   for (let user in users) {
     if (users[user].email === email) {
-      return user;
+      return users[user];
     }
   }
   return null;
 };
 
-// Our Database of shortURLS and longURLs
+////////// END OFHELPER FUNCTIONS //////////
+
+
+//////////// DATABASES /////////////
+
+// Our Database of shortURLS and longURLs //
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
 
+// User Database //
 const users = {};
+
+//////////// END OF DATABASES /////////////
+
+
+///////// ROUTE HANDLERS //////////
 
 // Route handler to show shortURL submision form
 app.get("/urls/new", (req, res) => {
@@ -45,12 +59,14 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new", templateVars);
 });
 
+// Route handler to show the registration page
 app.get("/register", (req, res) => {
   const currentUser = users[req.cookies["user_id"]];
   const templateVars = {user: currentUser};
   res.render("register", templateVars);
 });
 
+// Route handler for the registration submission
 app.post("/register", (req, res) => {
   if (req.body.email.trim() === "" || req.body.password.trim() === "") {
     res.statusCode = 400;
@@ -68,25 +84,36 @@ app.post("/register", (req, res) => {
   res.redirect("/urls");
 });
 
+// Route handler to show the login page
 app.get("/login", (req, res) => {
   const currentUser = users[req.cookies["user_id"]];
   const templateVars = { user: currentUser };
   res.render("login", templateVars);
 });
 
+// Route handler for the login submission
 app.post("/login", (req, res) => {
-  // res.cookie("username", req.body.username);
+  const user = getUserByEmail(req.body.email);
+  if (!user) {
+    res.statusCode = 403;
+    return res.end();
+  }
+  if (user.password !== req.body.password) {
+    res.statusCode = 403;
+    return res.end();
+  }
+  res.cookie("user_id", user.id);
   res.redirect("/urls");
 });
 
+// Route handler for the logout submission
 app.post("/logout", (req, res) => {
   res.clearCookie("user_id");
-  res.redirect("/urls");
+  res.redirect("/login");
 });
 
 // Route handler for handling the shortURL submission
 app.post("/urls", (req, res) => {
-  console.log(req.body); // Log the POST request body to the console
   const shortURL = generateRandomString(6);
   urlDatabase[shortURL] = req.body.longURL;
   res.redirect(`/urls/${shortURL}`);
@@ -112,6 +139,7 @@ app.get("/urls/:id", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
+// Route handler for editing a shortURL
 app.post("/urls/:id", (req, res) => {
   urlDatabase[req.params.id] = req.body.longURL;
   res.redirect(`/urls/${req.params.id}`);
@@ -127,6 +155,8 @@ app.post("/urls/:id/delete", (req, res) => {
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
+
+///////// END OF ROUTE HANDLERS //////////
 
 
 app.listen(PORT, () => {
