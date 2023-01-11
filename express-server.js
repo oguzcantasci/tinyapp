@@ -20,16 +20,52 @@ const generateRandomString = function(length) {
   return result;
 };
 
+// Helper func to find user by email
+const getUserByEmail = function(email) {
+  for (let user in users) {
+    if (users[user].email === email) {
+      return user;
+    }
+  }
+  return null;
+};
+
 // Our Database of shortURLS and longURLs
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
 
+const users = {};
+
 // Route handler to show shortURL submision form
 app.get("/urls/new", (req, res) => {
-  const templateVars = {username: req.cookies["username"]};
+  const currentUser = users[req.cookies["user_id"]];
+  const templateVars = {user: currentUser};
   res.render("urls_new", templateVars);
+});
+
+app.get("/register", (req, res) => {
+  const currentUser = users[req.cookies["user_id"]];
+  const templateVars = {user: currentUser};
+  res.render("register", templateVars);
+});
+
+app.post("/register", (req, res) => {
+  if (req.body.email.trim() === "" || req.body.password.trim() === "") {
+    res.statusCode = 400;
+    return res.end();
+  }
+
+  if (getUserByEmail(req.body.email)) {
+    res.statusCode = 400;
+    return res.end();
+  }
+
+  const userID = generateRandomString(6);
+  users[userID] = {id: userID, email: req.body.email, password: req.body.password};
+  res.cookie("user_id", userID);
+  res.redirect("/urls");
 });
 
 app.post("/login", (req, res) => {
@@ -38,7 +74,7 @@ app.post("/login", (req, res) => {
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie("username");
+  res.clearCookie("user_id");
   res.redirect("/urls");
 });
 
@@ -52,7 +88,8 @@ app.post("/urls", (req, res) => {
 
 // Route handler to show all URLs
 app.get("/urls", (req, res) => {
-  const templateVars = { username: req.cookies['username'], urls: urlDatabase };
+  const currentUser = users[req.cookies["user_id"]];
+  const templateVars = { user: currentUser, urls: urlDatabase };
   res.render("urls_index", templateVars);
 });
 
@@ -64,7 +101,8 @@ app.get("/u/:id", (req, res) => {
 
 // Route handler to show newly created shortURL and the corresponding longURL
 app.get("/urls/:id", (req, res) => {
-  const templateVars = { username: req.cookies['username'], id: req.params.id, longURL: urlDatabase[req.params.id] };
+  const currentUser = users[req.cookies["user_id"]];
+  const templateVars = { user: currentUser, id: req.params.id, longURL: urlDatabase[req.params.id] };
   res.render("urls_show", templateVars);
 });
 
