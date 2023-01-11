@@ -55,6 +55,9 @@ const users = {};
 // Route handler to show shortURL submision form
 app.get("/urls/new", (req, res) => {
   const currentUser = users[req.cookies["user_id"]];
+  if (!currentUser) {
+    return res.redirect("/login");
+  }
   const templateVars = {user: currentUser};
   res.render("urls_new", templateVars);
 });
@@ -62,6 +65,9 @@ app.get("/urls/new", (req, res) => {
 // Route handler to show the registration page
 app.get("/register", (req, res) => {
   const currentUser = users[req.cookies["user_id"]];
+  if (currentUser) {
+    return res.redirect("/urls");
+  }
   const templateVars = {user: currentUser};
   res.render("register", templateVars);
 });
@@ -87,6 +93,9 @@ app.post("/register", (req, res) => {
 // Route handler to show the login page
 app.get("/login", (req, res) => {
   const currentUser = users[req.cookies["user_id"]];
+  if (currentUser) {
+    return res.redirect("/urls");
+  }
   const templateVars = { user: currentUser };
   res.render("login", templateVars);
 });
@@ -114,6 +123,10 @@ app.post("/logout", (req, res) => {
 
 // Route handler for handling the shortURL submission
 app.post("/urls", (req, res) => {
+  const currentUser = users[req.cookies["user_id"]];
+  if (!currentUser) {
+    res.send("You are not logged in!!!");
+  }
   const shortURL = generateRandomString(6);
   urlDatabase[shortURL] = req.body.longURL;
   res.redirect(`/urls/${shortURL}`);
@@ -128,6 +141,9 @@ app.get("/urls", (req, res) => {
 
 // Route handler to redirect a shortURL to the longURL
 app.get("/u/:id", (req, res) => {
+  if (!urlDatabase[req.params.id]) {
+    return res.send("There's no such shortURL!!!");
+  }
   const longURL = urlDatabase[req.params.id];
   res.redirect(longURL);
 });
@@ -153,7 +169,7 @@ app.post("/urls/:id/delete", (req, res) => {
 
 // Route handler for the home page
 app.get("/", (req, res) => {
-  res.send("Hello!");
+  res.redirect("/urls");
 });
 
 ///////// END OF ROUTE HANDLERS //////////
