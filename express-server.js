@@ -40,8 +40,14 @@ const getUserByEmail = function(email) {
 
 // Our Database of shortURLS and longURLs //
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca",
+    userID: "aJ48lW",
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "aJ48lW",
+  },
 };
 
 // User Database //
@@ -128,7 +134,7 @@ app.post("/urls", (req, res) => {
     res.send("You are not logged in!!!");
   }
   const shortURL = generateRandomString(6);
-  urlDatabase[shortURL] = req.body.longURL;
+  urlDatabase[shortURL].longURL = req.body.longURL;
   res.redirect(`/urls/${shortURL}`);
 });
 
@@ -144,20 +150,24 @@ app.get("/u/:id", (req, res) => {
   if (!urlDatabase[req.params.id]) {
     return res.send("There's no such shortURL!!!");
   }
-  const longURL = urlDatabase[req.params.id];
+  const longURL = urlDatabase[req.params.id].longURL;
   res.redirect(longURL);
 });
 
 // Route handler to show newly created shortURL and the corresponding longURL
 app.get("/urls/:id", (req, res) => {
   const currentUser = users[req.cookies["user_id"]];
-  const templateVars = { user: currentUser, id: req.params.id, longURL: urlDatabase[req.params.id] };
+  const templateVars = { user: currentUser, id: req.params.id, longURL: urlDatabase[req.params.id].longURL };
   res.render("urls_show", templateVars);
 });
 
 // Route handler for editing a shortURL
 app.post("/urls/:id", (req, res) => {
-  urlDatabase[req.params.id] = req.body.longURL;
+  const currentUser = users[req.cookies["user_id"]];
+  if (!currentUser) {
+    return res.send("Can't edit if you are not a registered user!!!");
+  }
+  urlDatabase[req.params.id].longURL = req.body.longURL;
   res.redirect(`/urls/${req.params.id}`);
 });
 
