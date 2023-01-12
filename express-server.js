@@ -44,6 +44,17 @@ const urlsForUser = function(id) {
   return urls;
 };
 
+// Helper to check if a shortURL exists
+
+const shortURLExists = function(shortURL) {
+  for (let key of urlDatabase) {
+    if (shortURL === key) {
+      return true;
+    }
+  }
+  return false;
+};
+
 ////////// END OFHELPER FUNCTIONS //////////
 
 
@@ -185,6 +196,10 @@ app.post("/urls/:id", (req, res) => {
   const currentUser = users[req.cookies["user_id"]];
   if (!currentUser) {
     return res.send("Can't edit if you are not a registered user!!!");
+  } else if (currentUser.id !== urlDatabase[req.params].id) {
+    return res.send("Can't edit a shortURL that is not yours");
+  } else if (!shortURLExists) {
+    return res.send("There is no such shortURL");
   }
   urlDatabase[req.params.id].longURL = req.body.longURL;
   res.redirect(`/urls/${req.params.id}`);
@@ -192,6 +207,14 @@ app.post("/urls/:id", (req, res) => {
 
 // Route handler for the deletition of a shortURL entry
 app.post("/urls/:id/delete", (req, res) => {
+  const currentUser = users[req.cookies["user_id"]];
+  if (!currentUser) {
+    return res.send("Can't delete if you are not a registered user!!!");
+  } else if (currentUser.id !== urlDatabase[req.params].id) {
+    return res.send("Can't delete a shortURL that is not yours");
+  } else if (!shortURLExists) {
+    return res.send("There is no such shortURL");
+  }
   delete urlDatabase[req.params.id];
   res.redirect("/urls");
 });
