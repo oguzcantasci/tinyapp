@@ -33,6 +33,17 @@ const getUserByEmail = function(email) {
   return null;
 };
 
+// Helper to get userID //
+const urlsForUser = function(id) {
+  let urls = {};
+  for (let key in urlDatabase) {
+    if (urlDatabase[key].userID === id) {
+      urls[key] = urlDatabase[key];
+    }
+  }
+  return urls;
+};
+
 ////////// END OFHELPER FUNCTIONS //////////
 
 
@@ -134,14 +145,17 @@ app.post("/urls", (req, res) => {
     res.send("You are not logged in!!!");
   }
   const shortURL = generateRandomString(6);
-  urlDatabase[shortURL].longURL = req.body.longURL;
+  urlDatabase[shortURL] = { longURL: req.body.longURL, userID: currentUser.id};
   res.redirect(`/urls/${shortURL}`);
 });
 
 // Route handler to show all URLs
 app.get("/urls", (req, res) => {
   const currentUser = users[req.cookies["user_id"]];
-  const templateVars = { user: currentUser, urls: urlDatabase };
+  if (!currentUser) {
+    return res.send("Please log in to see your shortURLs");
+  }
+  const templateVars = { user: currentUser, urls: urlsForUser(currentUser.id) };
   res.render("urls_index", templateVars);
 });
 
@@ -157,6 +171,11 @@ app.get("/u/:id", (req, res) => {
 // Route handler to show newly created shortURL and the corresponding longURL
 app.get("/urls/:id", (req, res) => {
   const currentUser = users[req.cookies["user_id"]];
+  if (!currentUser) {
+    return res.send("You are not logged in!");
+  } else if (currentUser.id !== urlDatabase[req.params.id].userID) {
+    return res.send("Not your shortURL!");
+  }
   const templateVars = { user: currentUser, id: req.params.id, longURL: urlDatabase[req.params.id].longURL };
   res.render("urls_show", templateVars);
 });
@@ -179,6 +198,10 @@ app.post("/urls/:id/delete", (req, res) => {
 
 // Route handler for the home page
 app.get("/", (req, res) => {
+  const currentUser = users[req.cookies["user_id"]];
+  if (!currentUser) {
+    return res.redirect("/login");
+  }
   res.redirect("/urls");
 });
 
