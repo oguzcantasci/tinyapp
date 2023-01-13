@@ -143,7 +143,7 @@ app.post("/login", (req, res) => {
     res.statusCode = 403;
     return res.end();
   }
-  if (user.password !== req.body.password) {
+  if (!bcrypt.compareSync(req.body.password, user.password)) {
     res.statusCode = 403;
     return res.end();
   }
@@ -218,7 +218,7 @@ app.post("/urls/:id/delete", (req, res) => {
   const currentUser = users[req.cookies["user_id"]];
   if (!currentUser) {
     return res.send("Can't delete if you are not a registered user!!!");
-  } else if (currentUser.id !== urlDatabase[req.params].id) {
+  } else if (currentUser.id !== urlDatabase[req.params.id].userID) {
     return res.send("Can't delete a shortURL that is not yours");
   } else if (!shortURLExists) {
     return res.send("There is no such shortURL");
