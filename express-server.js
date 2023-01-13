@@ -1,12 +1,20 @@
+///// Express Server //////
 const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
 
+////// Packages //////
 const cookieParser = require('cookie-parser');
+const bcrypt = require("bcryptjs");
+
+
+
+
+///// Middleware /////
+
 app.use(cookieParser());
-
-
 app.use(express.urlencoded({ extended: true }));
+
 app.set("view engine", "ejs");
 
 
@@ -55,7 +63,7 @@ const shortURLExists = function(shortURL) {
   return false;
 };
 
-////////// END OFHELPER FUNCTIONS //////////
+////////// END OF HELPER FUNCTIONS //////////
 
 
 //////////// DATABASES /////////////
@@ -113,7 +121,7 @@ app.post("/register", (req, res) => {
   }
 
   const userID = generateRandomString(6);
-  users[userID] = {id: userID, email: req.body.email, password: req.body.password};
+  users[userID] = {id: userID, email: req.body.email, password: bcrypt.hashSync(req.body.password) };
   res.cookie("user_id", userID);
   res.redirect("/urls");
 });
