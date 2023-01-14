@@ -8,11 +8,10 @@ const PORT = 8080; // default port 8080
 const cookieSession = require('cookie-session');
 const bcrypt = require("bcryptjs");
 
-
+const helpers = require("./helpers");
 
 
 ///// Middleware /////
-
 app.use(cookieSession({
   name: 'session',
   keys: ["yarak", "kurek", "sikis"],
@@ -22,55 +21,9 @@ app.use(cookieSession({
 }));
 app.use(express.urlencoded({ extended: true }));
 
+
 app.set("view engine", "ejs");
 
-
-////////// HELPER FUNCTIONS //////////
-
-// Helper function to generate unique shortURL id
-const generateRandomString = function(length) {
-  let result = '';
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  const charactersLength = characters.length;
-  for (let i = 0; i < length; i++) {
-    result += characters.charAt(Math.floor(Math.random() * charactersLength));
-  }
-  return result;
-};
-
-// Helper function to find user by email
-const getUserByEmail = function(email) {
-  for (let user in users) {
-    if (users[user].email === email) {
-      return users[user];
-    }
-  }
-  return null;
-};
-
-// Helper to get userID //
-const urlsForUser = function(id) {
-  let urls = {};
-  for (let key in urlDatabase) {
-    if (urlDatabase[key].userID === id) {
-      urls[key] = urlDatabase[key];
-    }
-  }
-  return urls;
-};
-
-// Helper to check if a shortURL exists
-
-const shortURLExists = function(shortURL) {
-  for (let key of urlDatabase) {
-    if (shortURL === key) {
-      return true;
-    }
-  }
-  return false;
-};
-
-////////// END OF HELPER FUNCTIONS //////////
 
 
 //////////// DATABASES /////////////
@@ -122,12 +75,12 @@ app.post("/register", (req, res) => {
     return res.end();
   }
 
-  if (getUserByEmail(req.body.email)) {
+  if (helpers.getUserByEmail(req.body.email, users)) {
     res.statusCode = 400;
     return res.end();
   }
 
-  const userID = generateRandomString(6);
+  const userID = helpers.generateRandomString();
   users[userID] = {id: userID, email: req.body.email, password: bcrypt.hashSync(req.body.password) };
   req.session.user_id = userID;
   res.redirect("/urls");
@@ -145,7 +98,7 @@ app.get("/login", (req, res) => {
 
 // Route handler for the login submission
 app.post("/login", (req, res) => {
-  const user = getUserByEmail(req.body.email);
+  const user = helpers.getUserByEmail(req.body.email, users);
   if (!user) {
     res.statusCode = 403;
     return res.end();
@@ -171,7 +124,7 @@ app.post("/urls", (req, res) => {
   if (!currentUser) {
     res.send("You are not logged in!!!");
   }
-  const shortURL = generateRandomString(6);
+  const shortURL = helpers.generateRandomString();
   urlDatabase[shortURL] = { longURL: req.body.longURL, userID: currentUser.id};
   res.redirect(`/urls/${shortURL}`);
 });
@@ -182,7 +135,7 @@ app.get("/urls", (req, res) => {
   if (!currentUser) {
     return res.send("Please log in to see your shortURLs");
   }
-  const templateVars = { user: currentUser, urls: urlsForUser(currentUser.id) };
+  const templateVars = { user: currentUser, urls: helpers.urlsForUser(currentUser.id, urlDatabase) };
   res.render("urls_index", templateVars);
 });
 
@@ -210,13 +163,11 @@ app.get("/urls/:id", (req, res) => {
 // Route handler for editing a shortURL
 app.post("/urls/:id", (req, res) => {
   const currentUser = users[req.session.user_id];
-  console.log(currentUser);
-  console.log(urlDatabase[req.params.id]);
   if (!currentUser) {
     return res.send("Can't edit if you are not a registered user!!!");
   } else if (currentUser.id !== urlDatabase[req.params.id].userID) {
     return res.send("Can't edit a shortURL that is not yours");
-  } else if (!shortURLExists) {
+  } else if (!helpers.shortURLExists(urlDatabase[req.params.id], urlDatabase)) {
     return res.send("There is no such shortURL");
   }
   urlDatabase[req.params.id].longURL = req.body.longURL;
@@ -230,7 +181,7 @@ app.post("/urls/:id/delete", (req, res) => {
     return res.send("Can't delete if you are not a registered user!!!");
   } else if (currentUser.id !== urlDatabase[req.params.id].userID) {
     return res.send("Can't delete a shortURL that is not yours");
-  } else if (!shortURLExists) {
+  } else if (!helpers.shortURLExists(req.params.id, urlDatabase)) {
     return res.send("There is no such shortURL");
   }
   delete urlDatabase[req.params.id];
