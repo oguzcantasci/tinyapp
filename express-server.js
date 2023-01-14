@@ -1,10 +1,11 @@
+/* eslint-disable camelcase */
 ///// Express Server //////
 const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
 
 ////// Packages //////
-const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session');
 const bcrypt = require("bcryptjs");
 
 
@@ -12,7 +13,13 @@ const bcrypt = require("bcryptjs");
 
 ///// Middleware /////
 
-app.use(cookieParser());
+app.use(cookieSession({
+  name: 'session',
+  keys: ["yarak", "kurek", "sikis"],
+
+  // Cookie Options
+  maxAge: 24 * 60 * 60 * 1000 // 24 hours
+}));
 app.use(express.urlencoded({ extended: true }));
 
 app.set("view engine", "ejs");
@@ -90,7 +97,7 @@ const users = {};
 
 // Route handler to show shortURL submision form
 app.get("/urls/new", (req, res) => {
-  const currentUser = users[req.cookies["user_id"]];
+  const currentUser = users[req.session.user_id];
   if (!currentUser) {
     return res.redirect("/login");
   }
@@ -100,7 +107,7 @@ app.get("/urls/new", (req, res) => {
 
 // Route handler to show the registration page
 app.get("/register", (req, res) => {
-  const currentUser = users[req.cookies["user_id"]];
+  const currentUser = users[req.session.user_id];
   if (currentUser) {
     return res.redirect("/urls");
   }
@@ -122,13 +129,13 @@ app.post("/register", (req, res) => {
 
   const userID = generateRandomString(6);
   users[userID] = {id: userID, email: req.body.email, password: bcrypt.hashSync(req.body.password) };
-  res.cookie("user_id", userID);
+  req.session.user_id = userID;
   res.redirect("/urls");
 });
 
 // Route handler to show the login page
 app.get("/login", (req, res) => {
-  const currentUser = users[req.cookies["user_id"]];
+  const currentUser = users[req.session.user_id];
   if (currentUser) {
     return res.redirect("/urls");
   }
@@ -147,19 +154,20 @@ app.post("/login", (req, res) => {
     res.statusCode = 403;
     return res.end();
   }
-  res.cookie("user_id", user.id);
+  req.session.user_id = user.id;
   res.redirect("/urls");
 });
 
 // Route handler for the logout submission
 app.post("/logout", (req, res) => {
-  res.clearCookie("user_id");
+  res.clearCookie("session");
+  res.clearCookie("session.sig");
   res.redirect("/login");
 });
 
 // Route handler for handling the shortURL submission
 app.post("/urls", (req, res) => {
-  const currentUser = users[req.cookies["user_id"]];
+  const currentUser = users[req.session.user_id];
   if (!currentUser) {
     res.send("You are not logged in!!!");
   }
@@ -170,7 +178,7 @@ app.post("/urls", (req, res) => {
 
 // Route handler to show all URLs
 app.get("/urls", (req, res) => {
-  const currentUser = users[req.cookies["user_id"]];
+  const currentUser = users[req.session.user_id];
   if (!currentUser) {
     return res.send("Please log in to see your shortURLs");
   }
@@ -189,7 +197,7 @@ app.get("/u/:id", (req, res) => {
 
 // Route handler to show newly created shortURL and the corresponding longURL
 app.get("/urls/:id", (req, res) => {
-  const currentUser = users[req.cookies["user_id"]];
+  const currentUser = users[req.session.user_id];
   if (!currentUser) {
     return res.send("You are not logged in!");
   } else if (currentUser.id !== urlDatabase[req.params.id].userID) {
@@ -201,10 +209,12 @@ app.get("/urls/:id", (req, res) => {
 
 // Route handler for editing a shortURL
 app.post("/urls/:id", (req, res) => {
-  const currentUser = users[req.cookies["user_id"]];
+  const currentUser = users[req.session.user_id];
+  console.log(currentUser);
+  console.log(urlDatabase[req.params.id]);
   if (!currentUser) {
     return res.send("Can't edit if you are not a registered user!!!");
-  } else if (currentUser.id !== urlDatabase[req.params].id) {
+  } else if (currentUser.id !== urlDatabase[req.params.id].userID) {
     return res.send("Can't edit a shortURL that is not yours");
   } else if (!shortURLExists) {
     return res.send("There is no such shortURL");
@@ -215,7 +225,7 @@ app.post("/urls/:id", (req, res) => {
 
 // Route handler for the deletition of a shortURL entry
 app.post("/urls/:id/delete", (req, res) => {
-  const currentUser = users[req.cookies["user_id"]];
+  const currentUser = users[req.session.user_id];
   if (!currentUser) {
     return res.send("Can't delete if you are not a registered user!!!");
   } else if (currentUser.id !== urlDatabase[req.params.id].userID) {
@@ -229,7 +239,7 @@ app.post("/urls/:id/delete", (req, res) => {
 
 // Route handler for the home page
 app.get("/", (req, res) => {
-  const currentUser = users[req.cookies["user_id"]];
+  const currentUser = users[req.session.user_id];
   if (!currentUser) {
     return res.redirect("/login");
   }
