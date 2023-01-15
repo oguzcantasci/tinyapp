@@ -7,21 +7,20 @@ const PORT = 8080; // default port 8080
 ////// Packages //////
 const cookieSession = require('cookie-session');
 const bcrypt = require("bcryptjs");
-
 const helpers = require("./helpers");
 
 
 ///// Middleware /////
 app.use(cookieSession({
   name: 'session',
-  keys: ["yarak", "kurek", "sikis"],
+  keys: ["TobeyMaguireSupremacy", "IOfferedYouFriendship", "AndYouSpatInMyFace"],
 
   // Cookie Options
   maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }));
 app.use(express.urlencoded({ extended: true }));
 
-
+// Set the view engine to EJS //
 app.set("view engine", "ejs");
 
 
@@ -42,8 +41,6 @@ const urlDatabase = {
 
 // User Database //
 const users = {};
-
-//////////// END OF DATABASES /////////////
 
 
 ///////// ROUTE HANDLERS //////////
