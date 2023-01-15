@@ -31,9 +31,8 @@ const urlsForUser = function(id, urlDB) {
 };
 
 // Helper to check if a shortURL exists
-
 const shortURLExists = function(shortURL, urlDB) {
-  for (let key of urlDB) {
+  for (let key in urlDB) {
     if (shortURL === key) {
       return true;
     }
