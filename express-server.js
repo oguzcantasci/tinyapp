@@ -27,7 +27,7 @@ app.set("view engine", "ejs");
 
 //////////// DATABASES /////////////
 
-// Our Database of shortURLS and longURLs //
+// Database of shortURLS and longURLs //
 const urlDatabase = {
   b6UTxQ: {
     longURL: "https://www.tsn.ca",
@@ -45,6 +45,26 @@ const users = {};
 
 ///////// ROUTE HANDLERS //////////
 
+// Route handler for the home page
+app.get("/", (req, res) => {
+  const currentUser = users[req.session.user_id];
+  if (!currentUser) {
+    return res.redirect("/login");
+  }
+  res.redirect("/urls");
+});
+
+
+// Route handler to show all URLs
+app.get("/urls", (req, res) => {
+  const currentUser = users[req.session.user_id];
+  if (!currentUser) {
+    return res.send("Please log in to see your shortURLs");
+  }
+  const templateVars = { user: currentUser, urls: helpers.urlsForUser(currentUser.id, urlDatabase) };
+  res.render("urls_index", templateVars);
+});
+
 // Route handler to show shortURL submision form
 app.get("/urls/new", (req, res) => {
   const currentUser = users[req.session.user_id];
@@ -55,65 +75,30 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new", templateVars);
 });
 
-// Route handler to show the registration page
-app.get("/register", (req, res) => {
+// Route handler to show newly created shortURL and the corresponding longURL
+app.get("/urls/:id", (req, res) => {
   const currentUser = users[req.session.user_id];
-  if (currentUser) {
-    return res.redirect("/urls");
+  if (!currentUser) {
+    return res.send("You are not logged in!");
+  } else if (!helpers.shortURLExists(req.params.id, urlDatabase)) {
+    return res.send("There is no such shortURL in the database!");
+  } else if (currentUser.id !== urlDatabase[req.params.id].userID) {
+    return res.send("Not your shortURL!");
   }
-  const templateVars = {user: currentUser};
-  res.render("register", templateVars);
+  const templateVars = { user: currentUser, id: req.params.id, longURL: urlDatabase[req.params.id].longURL };
+  res.render("urls_show", templateVars);
 });
 
-// Route handler for the registration submission
-app.post("/register", (req, res) => {
-  if (req.body.email.trim() === "" || req.body.password.trim() === "") {
-    res.statusCode = 400;
-    return res.end();
-  }
 
-  if (helpers.getUserByEmail(req.body.email, users)) {
-    res.statusCode = 400;
-    return res.end();
+// Route handler to redirect a shortURL to the longURL
+app.get("/u/:id", (req, res) => {
+  if (!helpers.shortURLExists(req.params.id, urlDatabase)) {
+    return res.send("There's no such shortURL!!!");
   }
-
-  const userID = helpers.generateRandomString();
-  users[userID] = {id: userID, email: req.body.email, password: bcrypt.hashSync(req.body.password) };
-  req.session.user_id = userID;
-  res.redirect("/urls");
+  const longURL = urlDatabase[req.params.id].longURL;
+  res.redirect(longURL);
 });
 
-// Route handler to show the login page
-app.get("/login", (req, res) => {
-  const currentUser = users[req.session.user_id];
-  if (currentUser) {
-    return res.redirect("/urls");
-  }
-  const templateVars = { user: currentUser };
-  res.render("login", templateVars);
-});
-
-// Route handler for the login submission
-app.post("/login", (req, res) => {
-  const user = helpers.getUserByEmail(req.body.email, users);
-  if (!user) {
-    res.statusCode = 403;
-    return res.end();
-  }
-  if (!bcrypt.compareSync(req.body.password, user.password)) {
-    res.statusCode = 403;
-    return res.end();
-  }
-  req.session.user_id = user.id;
-  res.redirect("/urls");
-});
-
-// Route handler for the logout submission
-app.post("/logout", (req, res) => {
-  res.clearCookie("session");
-  res.clearCookie("session.sig");
-  res.redirect("/login");
-});
 
 // Route handler for handling the shortURL submission
 app.post("/urls", (req, res) => {
@@ -126,36 +111,6 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${shortURL}`);
 });
 
-// Route handler to show all URLs
-app.get("/urls", (req, res) => {
-  const currentUser = users[req.session.user_id];
-  if (!currentUser) {
-    return res.send("Please log in to see your shortURLs");
-  }
-  const templateVars = { user: currentUser, urls: helpers.urlsForUser(currentUser.id, urlDatabase) };
-  res.render("urls_index", templateVars);
-});
-
-// Route handler to redirect a shortURL to the longURL
-app.get("/u/:id", (req, res) => {
-  if (!urlDatabase[req.params.id]) {
-    return res.send("There's no such shortURL!!!");
-  }
-  const longURL = urlDatabase[req.params.id].longURL;
-  res.redirect(longURL);
-});
-
-// Route handler to show newly created shortURL and the corresponding longURL
-app.get("/urls/:id", (req, res) => {
-  const currentUser = users[req.session.user_id];
-  if (!currentUser) {
-    return res.send("You are not logged in!");
-  } else if (currentUser.id !== urlDatabase[req.params.id].userID) {
-    return res.send("Not your shortURL!");
-  }
-  const templateVars = { user: currentUser, id: req.params.id, longURL: urlDatabase[req.params.id].longURL };
-  res.render("urls_show", templateVars);
-});
 
 // Route handler for editing a shortURL
 app.post("/urls/:id", (req, res) => {
@@ -171,6 +126,7 @@ app.post("/urls/:id", (req, res) => {
   res.redirect(`/urls/${req.params.id}`);
 });
 
+
 // Route handler for the deletition of a shortURL entry
 app.post("/urls/:id/delete", (req, res) => {
   const currentUser = users[req.session.user_id];
@@ -185,16 +141,63 @@ app.post("/urls/:id/delete", (req, res) => {
   res.redirect("/urls");
 });
 
-// Route handler for the home page
-app.get("/", (req, res) => {
+
+// Route handler to show the login page
+app.get("/login", (req, res) => {
   const currentUser = users[req.session.user_id];
-  if (!currentUser) {
-    return res.redirect("/login");
+  if (currentUser) {
+    return res.redirect("/urls");
   }
+  const templateVars = { user: currentUser };
+  res.render("login", templateVars);
+});
+
+
+// Route handler to show the registration page
+app.get("/register", (req, res) => {
+  const currentUser = users[req.session.user_id];
+  if (currentUser) {
+    return res.redirect("/urls");
+  }
+  const templateVars = {user: currentUser};
+  res.render("register", templateVars);
+});
+
+
+// Route handler for the login submission
+app.post("/login", (req, res) => {
+  const user = helpers.getUserByEmail(req.body.email, users);
+  if (!user || !bcrypt.compareSync(req.body.password, user.password)) {
+    res.statusCode = 403;
+    return res.send("Email or password doesn't match!");
+  }
+  req.session.user_id = user.id;
   res.redirect("/urls");
 });
 
-///////// END OF ROUTE HANDLERS //////////
+
+// Route handler for the registration submission
+app.post("/register", (req, res) => {
+  if (req.body.email.trim() === "" || req.body.password.trim() === "") {
+    return res.send("Email and password fields cannot be blank");
+  }
+  if (helpers.getUserByEmail(req.body.email, users)) {
+    return res.send("This email is already associated with an existing user");
+  }
+
+  const userID = helpers.generateRandomString();
+  users[userID] = {id: userID, email: req.body.email, password: bcrypt.hashSync(req.body.password) };
+  req.session.user_id = userID;
+  res.redirect("/urls");
+});
+
+
+// Route handler for the logout submission
+app.post("/logout", (req, res) => {
+  res.clearCookie("session");
+  res.clearCookie("session.sig");
+  res.redirect("/login");
+});
 
 
 app.listen(PORT, () => {
