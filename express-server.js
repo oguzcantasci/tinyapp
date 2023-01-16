@@ -59,7 +59,9 @@ app.get("/", (req, res) => {
 app.get("/urls", (req, res) => {
   const currentUser = users[req.session.user_id];
   if (!currentUser) {
-    return res.send("Please log in to see your shortURLs");
+    const error = "You are not logged in!!!";
+    const templateVars = {error: error, user: currentUser};
+    return res.render("error", templateVars);
   }
   const templateVars = { user: currentUser, urls: helpers.urlsForUser(currentUser.id, urlDatabase) };
   res.render("urls_index", templateVars);
@@ -78,14 +80,21 @@ app.get("/urls/new", (req, res) => {
 // Route handler to show newly created shortURL and the corresponding longURL
 app.get("/urls/:id", (req, res) => {
   const currentUser = users[req.session.user_id];
-  if (!currentUser) {
-    return res.send("You are not logged in!");
-  } else if (!helpers.shortURLExists(req.params.id, urlDatabase)) {
-    return res.send("There is no such shortURL in the database!");
-  } else if (currentUser.id !== urlDatabase[req.params.id].userID) {
-    return res.send("Not your shortURL!");
-  }
   const templateVars = { user: currentUser, id: req.params.id, longURL: urlDatabase[req.params.id].longURL };
+  if (!currentUser) {
+    const error = "You are not logged in!";
+    templateVars["error"] = error;
+    return res.render("error", templateVars);
+  } else if (!helpers.shortURLExists(req.params.id, urlDatabase)) {
+    const error = "There is no such shortURL in the database!";
+    templateVars["error"] = error;
+    return res.render("error", templateVars);
+  } else if (currentUser.id !== urlDatabase[req.params.id].userID) {
+    const error = "Not your shortURL!";
+    templateVars["error"] = error;
+    return res.render("error", templateVars);
+  }
+  
   res.render("urls_show", templateVars);
 });
 
@@ -93,7 +102,9 @@ app.get("/urls/:id", (req, res) => {
 // Route handler to redirect a shortURL to the longURL
 app.get("/u/:id", (req, res) => {
   if (!helpers.shortURLExists(req.params.id, urlDatabase)) {
-    return res.send("There's no such shortURL!!!");
+    const error = "There's no such shortURL!!!";
+    const templateVars = {error: error, user: users[req.session.user_id] };
+    return res.render("error", templateVars);
   }
   const longURL = urlDatabase[req.params.id].longURL;
   res.redirect(longURL);
@@ -104,7 +115,9 @@ app.get("/u/:id", (req, res) => {
 app.post("/urls", (req, res) => {
   const currentUser = users[req.session.user_id];
   if (!currentUser) {
-    res.send("You are not logged in!!!");
+    const error = "You are not logged in!!!";
+    const templateVars = {error: error, user: users[req.session.user_id] };
+    res.render("error", templateVars);
   }
   const shortURL = helpers.generateRandomString();
   urlDatabase[shortURL] = { longURL: req.body.longURL, userID: currentUser.id};
@@ -116,11 +129,17 @@ app.post("/urls", (req, res) => {
 app.post("/urls/:id", (req, res) => {
   const currentUser = users[req.session.user_id];
   if (!currentUser) {
-    return res.send("Can't edit if you are not a registered user!!!");
+    const error = "Can't edit if you are not a registered user!!!";
+    const templateVars = {error: error, user: currentUser };
+    return res.render("error", templateVars);
   } else if (currentUser.id !== urlDatabase[req.params.id].userID) {
-    return res.send("Can't edit a shortURL that is not yours");
+    const error = "Can't edit a shortURL that is not yours";
+    const templateVars = {error: error, user: currentUser };
+    return res.render("error", templateVars);
   } else if (!helpers.shortURLExists(urlDatabase[req.params.id], urlDatabase)) {
-    return res.send("There is no such shortURL");
+    const error = "There is no such shortURL";
+    const templateVars = {error: error, user: currentUser };
+    return res.render("error", templateVars);
   }
   urlDatabase[req.params.id].longURL = req.body.longURL;
   res.redirect(`/urls/${req.params.id}`);
@@ -131,11 +150,17 @@ app.post("/urls/:id", (req, res) => {
 app.post("/urls/:id/delete", (req, res) => {
   const currentUser = users[req.session.user_id];
   if (!currentUser) {
-    return res.send("Can't delete if you are not a registered user!!!");
+    const error = "Can't delete if you are not a registered user!!!";
+    const templateVars = {error: error, user: currentUser };
+    return res.render("error", templateVars);
   } else if (currentUser.id !== urlDatabase[req.params.id].userID) {
-    return res.send("Can't delete a shortURL that is not yours");
+    const error = "Can't delete a shortURL that is not yours";
+    const templateVars = {error: error, user: currentUser };
+    return res.render("error", templateVars);
   } else if (!helpers.shortURLExists(req.params.id, urlDatabase)) {
-    return res.send("There is no such shortURL");
+    const error = "There is no such shortURL";
+    const templateVars = {error: error, user: currentUser };
+    return res.render("error", templateVars);
   }
   delete urlDatabase[req.params.id];
   res.redirect("/urls");
@@ -168,8 +193,9 @@ app.get("/register", (req, res) => {
 app.post("/login", (req, res) => {
   const user = helpers.getUserByEmail(req.body.email, users);
   if (!user || !bcrypt.compareSync(req.body.password, user.password)) {
-    res.statusCode = 403;
-    return res.send("Email or password doesn't match!");
+    const error = "Email or password doesn't match!";
+    const templateVars = {error: error, user: users[req.session.user_id] };
+    return res.render("error", templateVars);
   }
   req.session.user_id = user.id;
   res.redirect("/urls");
@@ -179,10 +205,14 @@ app.post("/login", (req, res) => {
 // Route handler for the registration submission
 app.post("/register", (req, res) => {
   if (req.body.email.trim() === "" || req.body.password.trim() === "") {
-    return res.send("Email and password fields cannot be blank");
+    const error = "Email and password fields cannot be blank";
+    const templateVars = {error: error, user: users[req.session.user_id] };
+    return res.render("error", templateVars);
   }
   if (helpers.getUserByEmail(req.body.email, users)) {
-    return res.send("This email is already associated with an existing user");
+    const error = "This email is already associated with an existing user";
+    const templateVars = {error: error, user: users[req.session.user_id] };
+    return res.render("error", templateVars);
   }
 
   const userID = helpers.generateRandomString();
