@@ -4,11 +4,11 @@ TinyApp is a full stack web application built with Node and Express that allows 
 
 ## Final Product
 
-<img alt="access-error" src="https://github.com/oguzcantasci/tinyapp/blob/main/docs/access-error.png?raw=true">
+!["Screenshot of access error when not logged in"](https://github.com/oguzcantasci/tinyapp/blob/main/docs/access-error.png?raw=true)
 
-<img alt="login-page" src="https://github.com/oguzcantasci/tinyapp/blob/main/docs/login-page.png?raw=true">
+!["Screenshot of the login page"](https://github.com/oguzcantasci/tinyapp/blob/main/docs/login-page.png?raw=true)
 
-<img alt="registration-page" src="https://github.com/oguzcantasci/tinyapp/blob/main/docs/registration-page.png?raw=true">
+!["Screenshot of the registration page"](https://github.com/oguzcantasci/tinyapp/blob/main/docs/registration-page.png?raw=true)
 
 
 ## Dependencies
@@ -41,12 +41,12 @@ TinyApp is a full stack web application built with Node and Express that allows 
 
 ### TinyApp Features
 
-<img alt="myURLs-page" src="https://github.com/oguzcantasci/tinyapp/blob/main/docs/myUrls-page.png?raw=true">
+
+!["Screenshot of myURLs page"](https://github.com/oguzcantasci/tinyapp/blob/main/docs/myUrls-page.png?raw=true)
 
 - Once you are logged in, you can create short URLs by using **Create URL** tab and access the **My URLs** tab, where your shortURLs are stored.
 
-
-<img alt="edit-page" src="https://github.com/oguzcantasci/tinyapp/blob/main/docs/edit-page.png?raw=true">
+!["Screenshot of shortURL edit page"](https://github.com/oguzcantasci/tinyapp/blob/main/docs/edit-page.png?raw=true)
 
 - In **My URLs** page, you can *edit* the long URL your shortURL will redirect to or *delete* your shortURLs. 
 
