@@ -103,7 +103,12 @@ app.post("/urls", (req, res) => {
   if (!currentUser) {
     const error = "You are not logged in!!!";
     const templateVars = {error: error, user: db.users[req.session.user_id] };
-    res.render("error", templateVars);
+    return res.render("error", templateVars);
+  }
+  if (req.body.longURL.trim() === "") {
+    const error = "URL field cannot be left blank!\nPlease enter a valid URL";
+    const templateVars = {error: error, user: db.users[req.session.user_id] };
+    return res.render("error", templateVars);
   }
   const shortURL = helpers.generateRandomString();
   db.urlDatabase[shortURL] = { longURL: req.body.longURL, userID: currentUser.id};
@@ -114,6 +119,7 @@ app.post("/urls", (req, res) => {
 // Route handler for editing a shortURL
 app.post("/urls/:id", (req, res) => {
   const currentUser = db.users[req.session.user_id];
+  console.log("edit posted");
   if (!currentUser) {
     const error = "Can't edit if you are not a registered user!!!";
     const templateVars = {error: error, user: currentUser };
@@ -122,8 +128,12 @@ app.post("/urls/:id", (req, res) => {
     const error = "Can't edit a shortURL that is not yours";
     const templateVars = {error: error, user: currentUser };
     return res.render("error", templateVars);
-  } else if (!helpers.shortURLExists(db.urlDatabase[req.params.id], db.urlDatabase)) {
+  } else if (!helpers.shortURLExists(req.params.id, db.urlDatabase)) {
     const error = "There is no such shortURL";
+    const templateVars = {error: error, user: currentUser };
+    return res.render("error", templateVars);
+  } else if (req.body.longURL.trim() === "") {
+    const error = "URL field cannot be left blank!\nPlease enter a valid URL";
     const templateVars = {error: error, user: currentUser };
     return res.render("error", templateVars);
   }
