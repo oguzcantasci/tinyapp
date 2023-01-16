@@ -138,7 +138,7 @@ app.post("/urls/:id", (req, res) => {
     return res.render("error", templateVars);
   }
   db.urlDatabase[req.params.id].longURL = req.body.longURL;
-  res.redirect(`/urls/${req.params.id}`);
+  res.redirect("/urls");
 });
 
 
