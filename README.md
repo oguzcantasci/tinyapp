@@ -4,6 +4,8 @@ TinyApp is a full stack web application built with Node and Express that allows 
 
 ## Final Product
 
+<img alt="access-error" src="https://github.com/oguzcantasci/tinyapp/blob/main/docs/access-error.png?raw=true">
+
 <img alt="login-page" src="https://github.com/oguzcantasci/tinyapp/blob/main/docs/login-page.png?raw=true">
 
 <img alt="registration-page" src="https://github.com/oguzcantasci/tinyapp/blob/main/docs/registration-page.png?raw=true">
